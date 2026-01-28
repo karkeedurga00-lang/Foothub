@@ -1,0 +1,118 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Football Hub – Ultimate Live Match Center</title>
+  <style>
+    body{margin:0;font-family:Arial,sans-serif;color:#fff;background-image:linear-gradient(rgba(0,0,0,.75),rgba(0,0,0,.75)),url('https://images.unsplash.com/photo-1598327103839-b11deab01aa7?auto=format&fit=crop&w=1600&q=80');background-size:cover;background-attachment:fixed;background-position:center}
+    header,footer{text-align:center;padding:20px;background:rgba(0,0,0,.85)}
+    nav{text-align:center;padding:10px;background:rgba(0,0,0,.9)}
+    nav a{color:#38bdf8;margin:0 10px;text-decoration:none;font-weight:bold}
+    section{max-width:1200px;margin:auto;padding:20px}
+    .card{background:rgba(0,0,0,.8);padding:20px;border-radius:14px;margin-bottom:20px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+    .item{background:rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer}
+    .item:hover{background:rgba(255,255,255,.15)}
+    input,select,button{padding:10px;border-radius:8px;border:none;margin:5px}
+    button{cursor:pointer;font-weight:bold;background:#38bdf8;color:#020617}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#16a34a;color:#052e16;font-size:12px;margin-left:6px}
+    .fav{float:right;font-size:18px;color:#facc15}
+    ul{padding-left:20px}
+  </style>
+</head>
+<body><header>
+  <h1>⚽ Football Hub</h1>
+  <p>Live scores • Commentary • Favorites • Official watch links</p>
+</header><nav>
+  <a href="#scores">Live Scores</a>
+  <a href="#details">Match Details</a>
+  <a href="#favorites">Favorites</a>
+  <a href="#watch">Watch Live</a>
+</nav><!-- LIVE SCORES --><section id="scores">
+  <div class="card">
+    <h2>Live Scores <span class="badge">AUTO REFRESH</span></h2>
+    <select id="leagueScores">
+      <option value="39">Premier League</option>
+      <option value="140">La Liga</option>
+      <option value="135">Serie A</option>
+      <option value="78">Bundesliga</option>
+      <option value="61">Ligue 1</option>
+    </select>
+    <button onclick="loadLiveScores()">Load Live Matches</button>
+    <div id="scoresGrid" class="grid"></div>
+  </div>
+</section><!-- MATCH DETAILS --><section id="details">
+  <div class="card">
+    <h2>Match Details & Commentary</h2>
+    <p id="selectedMatch">Click a live match to see details</p>
+    <ul id="commentaryList"></ul>
+  </div>
+</section><!-- FAVORITES --><section id="favorites">
+  <div class="card">
+    <h2>⭐ Favorite Teams</h2>
+    <ul id="favList"></ul>
+  </div>
+</section><!-- WATCH LINKS --><section id="watch">
+  <div class="card">
+    <h2>Watch Live (Official Broadcasters)</h2>
+    <p>Redirects to legal platforms (depends on country)</p>
+    <a href="https://www.hotstar.com" target="_blank">▶ Hotstar</a>
+    <a href="https://www.sonyliv.com" target="_blank">▶ Sony LIV</a>
+    <a href="https://www.skysports.com" target="_blank">▶ Sky Sports</a>
+    <a href="https://www.beinsports.com" target="_blank">▶ beIN Sports</a>
+  </div>
+</section><footer>
+  <p>© 2026 Football Hub | Ultimate Live Match Center</p>
+</footer><script>
+  const API_KEY='PASTE_YOUR_API_KEY_HERE';
+  let autoRefresh;
+  let favorites=JSON.parse(localStorage.getItem('favorites')||'[]');
+
+  function renderFavorites(){
+    const ul=document.getElementById('favList');
+    ul.innerHTML='';
+    favorites.forEach(f=>{const li=document.createElement('li');li.innerText=f;ul.appendChild(li);});
+  }
+  renderFavorites();
+
+  async function loadLiveScores(){
+    clearInterval(autoRefresh);
+    const league=document.getElementById('leagueScores').value;
+    const grid=document.getElementById('scoresGrid');
+
+    async function fetchScores(){
+      grid.innerHTML='Loading live matches...';
+      try{
+        const res=await fetch(`https://v3.football.api-sports.io/fixtures?league=${league}&live=all`,{headers:{'x-apisports-key':API_KEY}});
+        const data=await res.json();
+        grid.innerHTML='';
+        (data.response||[]).forEach(m=>{
+          const div=document.createElement('div');
+          div.className='item';
+          div.innerHTML=`<h3>${m.teams.home.name} ${m.goals.home} - ${m.goals.away} ${m.teams.away.name}</h3><p>${m.fixture.status.elapsed}'</p>`;
+          div.onclick=()=>loadMatchDetails(m);
+          grid.appendChild(div);
+        });
+        if(!grid.innerHTML) grid.innerHTML='No live matches right now.';
+      }catch{grid.innerHTML='Error loading live scores.'}
+    }
+
+    fetchScores();
+    autoRefresh=setInterval(fetchScores,30000); // refresh every 30s
+  }
+
+  function loadMatchDetails(match){
+    document.getElementById('selectedMatch').innerText=`${match.teams.home.name} vs ${match.teams.away.name} - ${match.fixture.date.split('T')[0]}`;
+    const list=document.getElementById('commentaryList');
+    list.innerHTML='';
+    const sample=["12' Goal! Home team scores.","25' Yellow card.","45+1' Half-time.","67' Substitution.","90' Full-time."];
+    sample.forEach(t=>{const li=document.createElement('li');li.innerText=t;list.appendChild(li);});
+  }
+
+  function addFavorite(team){
+    if(!favorites.includes(team)) favorites.push(team);
+    localStorage.setItem('favorites',JSON.stringify(favorites));
+    renderFavorites();
+  }
+</script></body>
+</html>
